@@ -9,7 +9,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class LmsSpringbootApplication {
     public static void main(String[] args) {
         SpringApplication.run(LmsSpringbootApplication.class, args);
-        System.out.print("Gurudevo");
+        System.out.print("Phani Sirr!! I am running Successfully :)");
     }
 }
 
