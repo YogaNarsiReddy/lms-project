@@ -1,0 +1,13 @@
+package com.klef.sdp.repository;
+
+import com.klef.sdp.entity.Assignment;
+import com.lms.entity.Submission;
+import com.lms.entity.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+public interface SubmissionRepository extends JpaRepository<Submission, Long> {
+    List<Submission> findByAssignment(Assignment assignment);
+    List<Submission> findByStudent(User student);
+}

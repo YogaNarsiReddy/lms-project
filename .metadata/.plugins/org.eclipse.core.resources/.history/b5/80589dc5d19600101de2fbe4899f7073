@@ -1,0 +1,56 @@
+package com.klef.sdp.controller;
+
+import com.lms.entity.Assignment;
+import com.lms.entity.Course;
+import com.lms.entity.Submission;
+import com.lms.service.AssignmentService;
+import com.lms.service.CourseService;
+import com.lms.service.SubmissionService;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/instructor")
+@PreAuthorize("hasRole('INSTRUCTOR')")
+public class InstructorController {
+
+    @Autowired
+    private CourseService courseService;
+
+    @Autowired
+    private AssignmentService assignmentService;
+
+    @Autowired
+    private SubmissionService submissionService;
+
+    @PostMapping("/courses")
+    public ResponseEntity<Course> createCourse(@Valid @RequestBody Course course, Authentication authentication) {
+        return ResponseEntity.ok(courseService.createCourse(course, authentication));
+    }
+
+    @PutMapping("/courses/{id}")
+    public ResponseEntity<Course> updateCourse(@PathVariable Long id, @Valid @RequestBody Course course, Authentication authentication) {
+        return ResponseEntity.ok(courseService.updateCourse(id, course, authentication));
+    }
+
+    @PostMapping("/courses/{courseId}/assignments")
+    public ResponseEntity<Assignment> createAssignment(@PathVariable Long courseId, @Valid @RequestBody Assignment assignment, Authentication authentication) {
+        return ResponseEntity.ok(assignmentService.createAssignment(courseId, assignment, authentication));
+    }
+
+    @GetMapping("/courses/{courseId}/submissions")
+    public ResponseEntity<List<Submission>> getSubmissions(@PathVariable Long courseId, Authentication authentication) {
+        return ResponseEntity.ok(submissionService.getSubmissionsByCourse(courseId, authentication));
+    }
+
+    @PutMapping("/submissions/{submissionId}/grade")
+    public ResponseEntity<Submission> gradeSubmission(@PathVariable Long submissionId, @RequestParam Double grade, Authentication authentication) {
+        return ResponseEntity.ok(submissionService.gradeSubmission(submissionId, grade, authentication));
+    }
+}

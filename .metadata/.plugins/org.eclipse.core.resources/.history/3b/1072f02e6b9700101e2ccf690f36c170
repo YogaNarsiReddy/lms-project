@@ -1,0 +1,56 @@
+package com.klef.sdp.service;
+
+import com.klef.sdp.dto.UserDTO;
+import com.klef.sdp.entity.Role;
+import com.klef.sdp.entity.User;
+import com.klef.sdp.repository.RoleRepository;
+import com.klef.sdp.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import java.util.HashSet;
+import java.util.Set;
+
+@Service
+public class UserService implements UserDetailsService {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private RoleRepository roleRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    public User registerUser(UserDTO userDTO, String roleName) {
+        User user = new User();
+        user.setUsername(userDTO.getUsername());
+        user.setEmail(userDTO.getEmail());
+        user.setFullName(userDTO.getFullName());
+        user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
+
+        Role role = roleRepository.findByName(roleName)
+                .orElseThrow(() -> new RuntimeException("Role not found"));
+        Set<Role> roles = new HashSet<>();
+        roles.add(role);
+        user.setRoles(roles);
+
+        return userRepository.save(user);
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+        return org.springframework.security.core.userdetails.User
+                .withUsername(user.getUsername())
+                .password(user.getPassword())
+                .authorities(user.getRoles().stream().map(role -> "ROLE_" + role.getName()).toArray(String[]::new))
+                .build();
+    }
+}

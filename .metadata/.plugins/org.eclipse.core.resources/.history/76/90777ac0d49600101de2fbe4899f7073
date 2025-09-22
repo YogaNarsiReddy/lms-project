@@ -1,0 +1,59 @@
+package com.klef.sdp.service;
+
+import com.klef.sdp.entity.Course;
+import com.klef.sdp.entity.User;
+import com.lms.repository.CourseRepository;
+import com.lms.repository.UserRepository;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+
+@Service
+public class CourseService {
+
+    @Autowired
+    private CourseRepository courseRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    public Course createCourse(@Valid Course course, Authentication authentication) {
+        User instructor = userRepository.findByUsername(authentication.getName())
+            .orElseThrow(() -> new IllegalArgumentException("Instructor not found"));
+        course.setInstructor(instructor);
+        return courseRepository.save(course);
+    }
+
+    public Course updateCourse(Long id, @Valid Course updatedCourse, Authentication authentication) {
+        Course course = courseRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Course not found"));
+        User instructor = userRepository.findByUsername(authentication.getName())
+            .orElseThrow(() -> new IllegalArgumentException("Instructor not found"));
+        if (!course.getInstructor().getId().equals(instructor.getId())) {
+            throw new SecurityException("Unauthorized to update this course");
+        }
+        course.setTitle(updatedCourse.getTitle());
+        course.setDescription(updatedCourse.getDescription());
+        return courseRepository.save(course);
+    }
+
+    public List<Course> getAllCourses() {
+        return courseRepository.findAll();
+    }
+
+    public Course getCourseById(Long id) {
+        return courseRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Course not found"));
+    }
+
+    public void deleteCourse(Long id) {
+        if (!courseRepository.existsById(id)) {
+            throw new IllegalArgumentException("Course not found");
+        }
+        courseRepository.deleteById(id);
+    }
+}

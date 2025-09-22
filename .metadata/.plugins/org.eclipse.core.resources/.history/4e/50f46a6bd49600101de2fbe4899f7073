@@ -1,0 +1,86 @@
+package com.klef.sdp.service;
+
+import com.klef.entity.Role;
+import com.lms.entity.User;
+import com.lms.repository.RoleRepository;
+import com.lms.repository.UserRepository;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+@Service
+public class UserService implements UserDetailsService {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private RoleRepository roleRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    public User registerUser(@Valid User user, String roleName) {
+        if (userRepository.findByUsername(user.getUsername()).isPresent()) {
+            throw new IllegalArgumentException("Username already exists");
+        }
+        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
+            throw new IllegalArgumentException("Email already exists");
+        }
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        Role role = roleRepository.findByName(roleName)
+            .orElseThrow(() -> new IllegalArgumentException("Role not found: " + roleName));
+        user.getRoles().add(role);
+        return userRepository.save(user);
+    }
+
+    public Optional<User> getUserById(Long id) {
+        return userRepository.findById(id);
+    }
+
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+    public User updateProfile(Long id, User updatedUser) {
+        User user = userRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        user.setFullName(updatedUser.getFullName());
+        user.setEmail(updatedUser.getEmail());
+        if (updatedUser.getPassword() != null && !updatedUser.getPassword().isEmpty()) {
+            user.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
+        }
+        return userRepository.save(user);
+    }
+
+    public void deleteUser(Long id) {
+        if (!userRepository.existsById(id)) {
+            throw new IllegalArgumentException("User not found");
+        }
+        userRepository.deleteById(id);
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        User user = userRepository.findByUsername(username)
+            .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+        List<SimpleGrantedAuthority> authorities = user.getRoles().stream()
+            .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
+            .collect(Collectors.toList());
+        return new org.springframework.security.core.userdetails.User(
+            user.getUsername(),
+            user.getPassword(),
+            authorities
+        );
+    }
+}

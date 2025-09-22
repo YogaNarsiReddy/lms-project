@@ -1,0 +1,69 @@
+package com.klef.sdp.service;
+
+import com.klef.sdp.entity.Course;
+import com.klef.sdp.entity.Enrollment;
+import com.klef.sdp.entity.Submission;
+import com.klef.sdp.entity.User;
+import com.klef.sdp.repository.CourseRepository;
+import com.klef.sdp.repository.EnrollmentRepository;
+import com.klef.sdp.repository.SubmissionRepository;
+import com.klef.sdp.repository.UserRepository;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+public class EnrollmentService {
+
+    @Autowired
+    private EnrollmentRepository enrollmentRepository;
+
+    @Autowired
+    private CourseRepository courseRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private SubmissionRepository submissionRepository;
+
+    public Enrollment enroll(Long courseId, Authentication authentication) {
+        User student = userRepository.findByUsername(authentication.getName())
+            .orElseThrow(() -> new IllegalArgumentException("Student not found"));
+        Course course = courseRepository.findById(courseId)
+            .orElseThrow(() -> new IllegalArgumentException("Course not found"));
+        if (enrollmentRepository.findByStudentAndCourse(student, course).isPresent()) {
+            throw new IllegalArgumentException("Already enrolled");
+        }
+        Enrollment enrollment = new Enrollment(student, course, 0.0);
+        return enrollmentRepository.save(enrollment);
+    }
+
+    public List<Enrollment> getEnrollmentsByStudent(Authentication authentication) {
+        User student = userRepository.findByUsername(authentication.getName())
+            .orElseThrow(() -> new IllegalArgumentException("Student not found"));
+        return enrollmentRepository.findByStudent(student);
+    }
+
+    public Double getProgress(Long courseId, Authentication authentication) {
+        User student = userRepository.findByUsername(authentication.getName())
+            .orElseThrow(() -> new IllegalArgumentException("Student not found"));
+        Course course = courseRepository.findById(courseId)
+            .orElseThrow(() -> new IllegalArgumentException("Course not found"));
+        Enrollment enrollment = enrollmentRepository.findByStudentAndCourse(student, course)
+            .orElseThrow(() -> new IllegalArgumentException("Not enrolled"));
+        List<Submission> submissions = submissionRepository.findByStudent(student);
+        long totalAssignments = course.getAssignments().size();
+        if (totalAssignments == 0) return 0.0;
+        long completedAssignments = submissions.stream()
+            .filter(s -> s.getAssignment().getCourse().getId().equals(courseId))
+            .count();
+        double progress = (completedAssignments / (double) totalAssignments) * 100;
+        enrollment.setProgress(progress);
+        enrollmentRepository.save(enrollment);
+        return progress;
+    }
+}

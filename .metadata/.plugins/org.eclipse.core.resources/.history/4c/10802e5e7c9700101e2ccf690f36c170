@@ -1,0 +1,71 @@
+package com.klef.sdp.service;
+
+import com.klef.sdp.entity.Submission;
+import com.klef.sdp.repository.SubmissionRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.util.List;
+
+@Service
+public class SubmissionService {
+
+    @Autowired
+    private SubmissionRepository submissionRepository;
+
+    // ===== Get all submissions =====
+    public List<Submission> getAllSubmissions() {
+        return submissionRepository.findAll();
+    }
+
+    // ===== Get submissions by course ID =====
+    public List<Submission> getSubmissionsByCourseId(Long courseId) {
+        return submissionRepository.findByCourse_Id(courseId);
+    }
+
+    // ===== Get submissions by course and student =====
+    public List<Submission> getSubmissionsByCourse(Long courseId, Long studentId) {
+        return submissionRepository.findByCourse_IdAndStudent_Id(courseId, studentId);
+    }
+
+    // ===== Grade a submission =====
+    public Submission gradeSubmission(Long submissionId, Double grade, Long instructorId) {
+        Submission submission = submissionRepository.findById(submissionId)
+                .orElseThrow(() -> new RuntimeException("Submission not found"));
+        submission.setGrade(grade);
+        submission.setGradedBy(instructorId); // Assuming Submission has gradedBy field
+        return submissionRepository.save(submission);
+    }
+
+    // ===== Submit assignment =====
+    public Submission submitAssignment(Long courseId, MultipartFile file, Long studentId) {
+        Submission submission = new Submission();
+        submission.setStudentId(studentId); // Assuming Submission has studentId field
+        submission.setCourseId(courseId);   // Assuming Submission has courseId field
+
+        try {
+            submission.setFileData(file.getBytes()); // Assuming Submission has byte[] fileData
+            submission.setFileName(file.getOriginalFilename());
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to read file", e);
+        }
+
+        return submissionRepository.save(submission);
+    }
+
+    // ===== Get submission by ID =====
+    public Submission getSubmissionById(Long id) {
+        return submissionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Submission not found"));
+    }
+
+    // ===== Delete submission =====
+    public void deleteSubmission(Long id) {
+        if (!submissionRepository.existsById(id)) {
+            throw new RuntimeException("Submission not found");
+        }
+        submissionRepository.deleteById(id);
+    }
+}

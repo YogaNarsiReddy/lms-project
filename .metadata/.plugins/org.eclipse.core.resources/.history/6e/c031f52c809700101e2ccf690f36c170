@@ -1,0 +1,66 @@
+package com.klef.sdp.service;
+
+import com.klef.sdp.entity.Course;
+import com.klef.sdp.entity.Enrollment;
+import com.klef.sdp.entity.User;
+import com.klef.sdp.repository.CourseRepository;
+import com.klef.sdp.repository.EnrollmentRepository;
+import com.klef.sdp.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+public class CourseService {
+
+    @Autowired
+    private CourseRepository courseRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private EnrollmentRepository enrollmentRepository;
+
+    public List<Course> getAllCourses() {
+        return courseRepository.findAll();
+    }
+
+    public Course getCourseById(Long id) {
+        return courseRepository.findById(id).orElseThrow(() -> new RuntimeException("Course not found"));
+    }
+
+    public Course createCourse(Course course, Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        if (!user.getRoles().stream().anyMatch(role -> role.getName().equalsIgnoreCase("INSTRUCTOR"))) {
+            throw new RuntimeException("Unauthorized: User is not an instructor");
+        }
+        course.setInstructor(user);
+        return courseRepository.save(course);
+    }
+
+    public Course updateCourse(Long id, Course courseDetails, Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        Course course = courseRepository.findById(id).orElseThrow(() -> new RuntimeException("Course not found"));
+        if (!user.getRoles().stream().anyMatch(role -> role.getName().equalsIgnoreCase("INSTRUCTOR")) ||
+            !course.getInstructor().getId().equals(userId)) {
+            throw new RuntimeException("Unauthorized: User is not the course instructor");
+        }
+        course.setTitle(courseDetails.getTitle());
+        course.setDescription(courseDetails.getDescription());
+        return courseRepository.save(course);
+    }
+
+    public void deleteCourse(Long id) {
+        courseRepository.deleteById(id);
+    }
+
+    public boolean isEnrolledOrInstructor(Long courseId, Long userId) {
+        Course course = courseRepository.findById(courseId).orElseThrow(() -> new RuntimeException("Course not found"));
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        boolean isInstructor = course.getInstructor().getId().equals(userId);
+        boolean isEnrolled = enrollmentRepository.findByStudentIdAndCourseId(userId, courseId).isPresent();
+        return isInstructor || isEnrolled;
+    }
+}

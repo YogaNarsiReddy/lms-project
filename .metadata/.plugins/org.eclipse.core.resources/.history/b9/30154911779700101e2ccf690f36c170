@@ -1,0 +1,53 @@
+package com.klef.sdp.controller;
+
+import com.klef.sdp.model.User;
+import com.klef.sdp.service.UserService;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@CrossOrigin(origins = "http://localhost:5173")
+@RequestMapping("/api/auth")
+public class AuthController {
+
+    @Autowired
+    private UserService userService;
+
+    @PostMapping("/register")
+    public ResponseEntity<User> register(@Valid @RequestBody User user, @RequestParam String role) {
+        User savedUser = userService.registerUser(user, role.toUpperCase());
+        return ResponseEntity.ok(savedUser);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
+        User user = userService.login(request.getUsername(), request.getPassword());
+        if (user != null) {
+            return ResponseEntity.ok(user);
+        }
+        return ResponseEntity.status(401).body("Invalid username or password");
+    }
+}
+
+class LoginRequest {
+    private String username;
+    private String password;
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+}

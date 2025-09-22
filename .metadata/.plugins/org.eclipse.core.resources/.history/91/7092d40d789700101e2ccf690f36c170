@@ -1,0 +1,59 @@
+package com.klef.sdp.service;
+
+import com.klef.sdp.entity.Course;
+import com.klef.sdp.entity.ForumPost;
+import com.klef.sdp.entity.User;
+import com.klef.sdp.repository.CourseRepository;
+import com.klef.sdp.repository.ForumPostRepository;
+import com.klef.sdp.repository.UserRepository;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Service
+public class ForumService {
+
+    @Autowired
+    private ForumPostRepository forumPostRepository;
+
+    @Autowired
+    private CourseRepository courseRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    public ForumPost createPost(Long courseId, @Valid ForumPost post, Authentication authentication) {
+        User author = userRepository.findByUsername(authentication.getName())
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        Course course = courseRepository.findById(courseId)
+            .orElseThrow(() -> new IllegalArgumentException("Course not found"));
+        post.setAuthor(author);
+        post.setCourse(course);
+        post.setCreatedAt(LocalDateTime.now());
+        return forumPostRepository.save(post);
+    }
+
+    public ForumPost createReply(Long courseId, Long postId, @Valid ForumPost reply, Authentication authentication) {
+        User author = userRepository.findByUsername(authentication.getName())
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        Course course = courseRepository.findById(courseId)
+            .orElseThrow(() -> new IllegalArgumentException("Course not found"));
+        ForumPost parentPost = forumPostRepository.findById(postId)
+            .orElseThrow(() -> new IllegalArgumentException("Post not found"));
+        reply.setAuthor(author);
+        reply.setCourse(course);
+        reply.setParentPost(parentPost);
+        reply.setCreatedAt(LocalDateTime.now());
+        return forumPostRepository.save(reply);
+    }
+
+    public List<ForumPost> getPostsByCourse(Long courseId) {
+        Course course = courseRepository.findById(courseId)
+            .orElseThrow(() -> new IllegalArgumentException("Course not found"));
+        return forumPostRepository.findByCourseAndParentPostIsNull(course);
+    }
+}

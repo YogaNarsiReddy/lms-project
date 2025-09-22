@@ -1,0 +1,56 @@
+package com.klef.sdp.controller;
+
+import com.klef.sdp.entity.Enrollment;
+import com.klef.sdp.entity.Submission;
+import com.klef.sdp.service.CertificateService;
+import com.klef.sdp.service.EnrollmentService;
+import com.klef.sdp.service.SubmissionService;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+
+@RestController
+@CrossOrigin(origins = "http://localhost:5173")
+@RequestMapping("/api/student")
+public class StudentController {
+
+    @Autowired
+    private EnrollmentService enrollmentService;
+
+    @Autowired
+    private SubmissionService submissionService;
+
+    @Autowired
+    private CertificateService certificateService;
+
+    @PostMapping("/enroll/{courseId}")
+    public ResponseEntity<Enrollment> enroll(@PathVariable Long courseId, @RequestParam Long userId) {
+        return ResponseEntity.ok(enrollmentService.enroll(courseId, userId));
+    }
+
+    @PostMapping("/assignments/{assignmentId}/submit")
+    public ResponseEntity<Submission> submitAssignment(@PathVariable Long assignmentId, @RequestParam("file") MultipartFile file, @RequestParam Long userId) throws IOException {
+        return ResponseEntity.ok(submissionService.submitAssignment(assignmentId, file, userId));
+    }
+
+    @GetMapping("/progress/{courseId}")
+    public ResponseEntity<Double> getProgress(@PathVariable Long courseId, @RequestParam Long userId) {
+        return ResponseEntity.ok(enrollmentService.getProgress(courseId, userId));
+    }
+
+    @GetMapping("/certificate/{courseId}")
+    public ResponseEntity<ByteArrayResource> generateCertificate(@PathVariable Long courseId, @RequestParam Long userId) {
+        byte[] certificate = certificateService.generateCertificate(courseId, userId);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=certificate.pdf")
+                .body(new ByteArrayResource(certificate));
+    }
+}

@@ -1,0 +1,74 @@
+package com.klef.sdp.controller;
+
+import com.klef.sdp.entity.User;
+import com.klef.sdp.model.Course;
+import com.klef.sdp.service.UserService;
+import com.klef.sdp.service.CourseService;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@CrossOrigin(origins = "http://localhost:5173")
+@RequestMapping("/api/admin")
+public class AdminController {
+
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private CourseService courseService;
+
+    @GetMapping("/users")
+    public ResponseEntity<List<User>> getAllUsers(@RequestParam String username) {
+        if (!userService.isAdmin(username)) {
+            return ResponseEntity.status(403).body(null);
+        }
+        return ResponseEntity.ok(userService.getAllUsers());
+    }
+
+    @PostMapping("/users")
+    public ResponseEntity<User> createUser(@Valid @RequestBody User user, @RequestParam String role, @RequestParam String username) {
+        if (!userService.isAdmin(username)) {
+            return ResponseEntity.status(403).body(null);
+        }
+        return ResponseEntity.ok(userService.registerUser(user, role.toUpperCase()));
+    }
+
+    @PutMapping("/users/{id}")
+    public ResponseEntity<User> updateUser(@PathVariable Long id, @Valid @RequestBody User user, @RequestParam String username) {
+        if (!userService.isAdmin(username)) {
+            return ResponseEntity.status(403).body(null);
+        }
+        return ResponseEntity.ok(userService.updateProfile(id, user));
+    }
+
+    @DeleteMapping("/users/{id}")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id, @RequestParam String username) {
+        if (!userService.isAdmin(username)) {
+            return ResponseEntity.status(403).build();
+        }
+        userService.deleteUser(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/courses")
+    public ResponseEntity<List<Course>> getAllCourses(@RequestParam String username) {
+        if (!userService.isAdmin(username)) {
+            return ResponseEntity.status(403).body(null);
+        }
+        return ResponseEntity.ok(courseService.getAllCourses());
+    }
+
+    @DeleteMapping("/courses/{id}")
+    public ResponseEntity<Void> deleteCourse(@PathVariable Long id, @RequestParam String username) {
+        if (!userService.isAdmin(username)) {
+            return ResponseEntity.status(403).build();
+        }
+        courseService.deleteCourse(id);
+        return ResponseEntity.noContent().build();
+    }
+}

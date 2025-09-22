@@ -1,0 +1,24 @@
+package com.klef.sdp;
+
+import com.klef.sdp.config.JwtConfig;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.ComponentScan;
+
+@SpringBootApplication
+@EnableConfigurationProperties(JwtConfig.class)
+@ComponentScan(basePackages = "com.klef.sdp")
+public class LmsSpringbootApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(LmsSpringbootApplication.class, args);
+        S
+    }
+}
+
+
+
+
+
+
+

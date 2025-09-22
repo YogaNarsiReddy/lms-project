@@ -1,0 +1,62 @@
+package com.klef.sdp.service;
+
+import com.klef.sdp.entity.Role;
+import com.klef.sdp.entity.User;
+import com.klef.sdp.repository.RoleRepository;
+import com.klef.sdp.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+@Service
+public class UserService {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private RoleRepository roleRepository;
+
+    public User login(String username, String password) {
+        Optional<User> userOptional = userRepository.findByUsername(username);
+        if (userOptional.isPresent() && userOptional.get().getPassword().equals(password)) {
+            return userOptional.get();
+        }
+        return null;
+    }
+
+    public User registerUser(User user, String roleName) {
+        Role role = roleRepository.findByName(roleName)
+                .orElseGet(() -> roleRepository.save(new Role(roleName)));
+        Set<Role> roles = new HashSet<>();
+        roles.add(role);
+        user.setRoles(roles);
+        return userRepository.save(user);
+    }
+
+    public User updateProfile(Long id, User userDetails) {
+        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+        user.setUsername(userDetails.getUsername());
+        user.setEmail(userDetails.getEmail());
+        user.setPassword(userDetails.getPassword());
+        user.setFullName(userDetails.getFullName());
+        user.setRoles(userDetails.getRoles());
+        return userRepository.save(user);
+    }
+
+    public void deleteUser(Long id) {
+        userRepository.deleteById(id);
+    }
+
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+    public boolean hasRole(Long userId, String roleName) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        return user.getRoles().stream().anyMatch(role -> role.getName().equalsIgnoreCase(roleName));
+    }
+}

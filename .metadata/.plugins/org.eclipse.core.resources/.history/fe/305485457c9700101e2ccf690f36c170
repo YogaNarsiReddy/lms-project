@@ -1,0 +1,88 @@
+package com.klef.sdp.entity;
+
+import jakarta.persistence.*;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "submissions")
+public class Submission {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne
+    @JoinColumn(name = "student_id", nullable = false)
+    private User student;
+
+    @ManyToOne
+    @JoinColumn(name = "assignment_id", nullable = false)
+    private Assignment assignment;
+
+    @Column(columnDefinition = "TEXT")
+    private String content; // URL or path to submitted file, or text content
+
+    @Column
+    private LocalDateTime submissionDate;
+
+    @Column
+    private Double grade; // Nullable, set by instructor
+
+    // Constructors
+    public Submission() {}
+
+    public Submission(User student, Assignment assignment, String content, LocalDateTime submissionDate) {
+        this.student = student;
+        this.assignment = assignment;
+        this.content = content;
+        this.submissionDate = submissionDate;
+    }
+
+    // Getters and Setters
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public User getStudent() {
+        return student;
+    }
+
+    public void setStudent(User student) {
+        this.student = student;
+    }
+
+    public Assignment getAssignment() {
+        return assignment;
+    }
+
+    public void setAssignment(Assignment assignment) {
+        this.assignment = assignment;
+    }
+
+    public String getContent() {
+        return content;
+    }
+
+    public void setContent(String content) {
+        this.content = content;
+    }
+
+    public LocalDateTime getSubmissionDate() {
+        return submissionDate;
+    }
+
+    public void setSubmissionDate(LocalDateTime submissionDate) {
+        this.submissionDate = submissionDate;
+    }
+
+    public Double getGrade() {
+        return grade;
+    }
+
+    public void setGrade(Double grade) {
+        this.grade = grade;
+    }
+}

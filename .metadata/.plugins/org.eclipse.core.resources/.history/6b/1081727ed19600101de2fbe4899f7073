@@ -1,0 +1,57 @@
+package com.klef.sdp.controller;
+
+import com.klef.sdp.entity.User;
+import com.lms.entity.Course;
+import com.lms.service.UserService;
+import com.lms.service.CourseService;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/admin")
+@PreAuthorize("hasRole('ADMIN')")
+public class AdminController {
+
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private CourseService courseService;
+
+    @GetMapping("/users")
+    public ResponseEntity<List<User>> getAllUsers() {
+        return ResponseEntity.ok(userService.getAllUsers());
+    }
+
+    @PostMapping("/users")
+    public ResponseEntity<User> createUser(@Valid @RequestBody User user, @RequestParam String role) {
+        return ResponseEntity.ok(userService.registerUser(user, role.toUpperCase()));
+    }
+
+    @PutMapping("/users/{id}")
+    public ResponseEntity<User> updateUser(@PathVariable Long id, @Valid @RequestBody User user) {
+        return ResponseEntity.ok(userService.updateProfile(id, user));
+    }
+
+    @DeleteMapping("/users/{id}")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+        userService.deleteUser(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/courses")
+    public ResponseEntity<List<Course>> getAllCourses() {
+        return ResponseEntity.ok(courseService.getAllCourses());
+    }
+
+    @DeleteMapping("/courses/{id}")
+    public ResponseEntity<Void> deleteCourse(@PathVariable Long id) {
+        courseService.deleteCourse(id);
+        return ResponseEntity.noContent().build();
+    }
+}

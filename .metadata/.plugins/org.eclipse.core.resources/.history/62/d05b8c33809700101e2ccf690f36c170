@@ -1,0 +1,34 @@
+package com.klef.sdp.service;
+
+import com.klef.sdp.entity.Assignment;
+import com.klef.sdp.entity.Course;
+import com.klef.sdp.entity.User;
+import com.klef.sdp.repository.AssignmentRepository;
+import com.klef.sdp.repository.CourseRepository;
+import com.klef.sdp.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@Service
+public class AssignmentService {
+
+    @Autowired
+    private AssignmentRepository assignmentRepository;
+
+    @Autowired
+    private CourseRepository courseRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    public Assignment createAssignment(Long courseId, Assignment assignment, Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        Course course = courseRepository.findById(courseId).orElseThrow(() -> new RuntimeException("Course not found"));
+        if (!user.getRoles().stream().anyMatch(role -> role.getName().equalsIgnoreCase("INSTRUCTOR")) ||
+            !course.getInstructor().getId().equals(userId)) {
+            throw new RuntimeException("Unauthorized: User is not the course instructor");
+        }
+        assignment.setCourse(course);
+        return assignmentRepository.save(assignment);
+    }
+}

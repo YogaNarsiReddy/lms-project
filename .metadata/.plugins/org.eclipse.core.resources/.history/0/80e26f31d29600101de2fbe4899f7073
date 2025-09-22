@@ -1,0 +1,53 @@
+package com.klef.sdp.controller;
+
+import com.klef.sdp.entity.Course;
+import com.klef.sdp.entity.ForumPost;
+import com.klef.sdp.service.CourseService;
+import com.klef.sdp.service.ForumService;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/courses")
+public class CourseController {
+
+    @Autowired
+    private CourseService courseService;
+
+    @Autowired
+    private ForumService forumService;
+
+    @GetMapping
+    public ResponseEntity<List<Course>> getAllCourses() {
+        return ResponseEntity.ok(courseService.getAllCourses());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Course> getCourseById(@PathVariable Long id) {
+        return ResponseEntity.ok(courseService.getCourseById(id));
+    }
+
+    @GetMapping("/{id}/forum")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'STUDENT')")
+    public ResponseEntity<List<ForumPost>> getForumPosts(@PathVariable Long id) {
+        return ResponseEntity.ok(forumService.getPostsByCourse(id));
+    }
+
+    @PostMapping("/{id}/forum")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'STUDENT')")
+    public ResponseEntity<ForumPost> createForumPost(@PathVariable Long id, @Valid @RequestBody ForumPost post, Authentication authentication) {
+        return ResponseEntity.ok(forumService.createPost(id, post, authentication));
+    }
+
+    @PostMapping("/{id}/forum/{postId}/reply")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'STUDENT')")
+    public ResponseEntity<ForumPost> createForumReply(@PathVariable Long id, @PathVariable Long postId, @Valid @RequestBody ForumPost reply, Authentication authentication) {
+        return ResponseEntity.ok(forumService.createReply(id, postId, reply, authentication));
+    }
+}

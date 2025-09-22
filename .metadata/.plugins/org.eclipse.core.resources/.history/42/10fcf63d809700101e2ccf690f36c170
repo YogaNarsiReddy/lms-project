@@ -1,0 +1,95 @@
+package com.klef.sdp.service;
+
+import com.klef.sdp.entity.Assignment;
+import com.klef.sdp.entity.Submission;
+import com.klef.sdp.entity.User;
+import com.klef.sdp.repository.AssignmentRepository;
+import com.klef.sdp.repository.SubmissionRepository;
+import com.klef.sdp.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Service
+public class SubmissionService {
+
+    @Autowired
+    private SubmissionRepository submissionRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private AssignmentRepository assignmentRepository;
+
+    // ===== Get all submissions =====
+    public List<Submission> getAllSubmissions() {
+        return submissionRepository.findAll();
+    }
+
+    // ===== Get submissions by course ID =====
+    public List<Submission> getSubmissionsByCourseId(Long courseId) {
+        return submissionRepository.findByAssignment_Course_Id(courseId);
+    }
+
+    // ===== Get submissions by course and student =====
+    public List<Submission> getSubmissionsByCourse(Long courseId, Long studentId) {
+        return submissionRepository.findByAssignment_Course_IdAndStudent_Id(courseId, studentId);
+    }
+
+    // ===== Grade a submission =====
+    public Submission gradeSubmission(Long submissionId, Double grade, Long instructorId) {
+        Submission submission = submissionRepository.findById(submissionId)
+                .orElseThrow(() -> new RuntimeException("Submission not found"));
+
+        User instructor = userRepository.findById(instructorId)
+                .orElseThrow(() -> new RuntimeException("Instructor not found"));
+
+        submission.setGrade(grade);
+        submission.setGradedBy(instructor);
+
+        return submissionRepository.save(submission);
+    }
+
+    // ===== Submit assignment =====
+    public Submission submitAssignment(Long assignmentId, MultipartFile file, Long studentId) {
+        Submission submission = new Submission();
+
+        User student = userRepository.findById(studentId)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+
+        Assignment assignment = assignmentRepository.findById(assignmentId)
+                .orElseThrow(() -> new RuntimeException("Assignment not found"));
+
+        submission.setStudent(student);
+        submission.setAssignment(assignment);
+        submission.setSubmissionDate(LocalDateTime.now());
+
+        try {
+            submission.setFileData(file.getBytes());
+            submission.setFileName(file.getOriginalFilename());
+            submission.setContent(file.getOriginalFilename()); // Optional: store filename as content
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to read file", e);
+        }
+
+        return submissionRepository.save(submission);
+    }
+
+    // ===== Get submission by ID =====
+    public Submission getSubmissionById(Long id) {
+        return submissionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Submission not found"));
+    }
+
+    // ===== Delete submission =====
+    public void deleteSubmission(Long id) {
+        if (!submissionRepository.existsById(id)) {
+            throw new RuntimeException("Submission not found");
+        }
+        submissionRepository.deleteById(id);
+    }
+}

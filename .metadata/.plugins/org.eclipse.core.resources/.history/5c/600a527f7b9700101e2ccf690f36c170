@@ -1,0 +1,60 @@
+package com.klef.sdp.service;
+
+import com.klef.sdp.entity.Assignment;
+import com.klef.sdp.entity.Submission;
+import com.klef.sdp.entity.User;
+import com.klef.sdp.repository.AssignmentRepository;
+import com.klef.sdp.repository.SubmissionRepository;
+import com.klef.sdp.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Service
+public class SubmissionService {
+
+    @Autowired
+    private SubmissionRepository submissionRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private AssignmentRepository assignmentRepository;
+
+    public Submission submitAssignment(Long assignmentId, MultipartFile file, Long userId) throws IOException {
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        if (!user.getRoles().stream().anyMatch(role -> role.getName().equalsIgnoreCase("STUDENT"))) {
+            throw new RuntimeException("Unauthorized: User is not a student");
+        }
+        Assignment assignment = assignmentRepository.findById(assignmentId).orElseThrow(() -> new RuntimeException("Assignment not found"));
+        Submission submission = new Submission();
+        submission.setStudent(user);
+        submission.setAssignment(assignment);
+        submission.setContent(new String(file.getBytes())); // Store as string (adjust for file storage if needed)
+        submission.setSubmissionDate(LocalDateTime.now());
+        return submissionRepository.save(submission);
+    }
+
+    public List<Submission> getSubmissionsByCourse(Long courseId, Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        if (!user.getRoles().stream().anyMatch(role -> role.getName().equalsIgnoreCase("INSTRUCTOR"))) {
+            throw new RuntimeException("Unauthorized: User is not an instructor");
+        }
+        return submissionRepository.findByCourseId(courseId);
+    }
+
+    public Submission gradeSubmission(Long submissionId, Double grade, Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        if (!user.getRoles().stream().anyMatch(role -> role.getName().equalsIgnoreCase("INSTRUCTOR"))) {
+            throw new RuntimeException("Unauthorized: User is not an instructor");
+        }
+        Submission submission = submissionRepository.findById(submissionId).orElseThrow(() -> new RuntimeException("Submission not found"));
+        submission.setGrade(grade);
+        return submissionRepository.save(submission);
+    }
+}

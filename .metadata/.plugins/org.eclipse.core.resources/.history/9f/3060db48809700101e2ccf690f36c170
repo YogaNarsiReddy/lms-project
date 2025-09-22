@@ -1,0 +1,42 @@
+package com.klef.sdp.service;
+
+import com.klef.sdp.entity.Course;
+import com.klef.sdp.entity.User;
+import com.klef.sdp.repository.CourseRepository;
+import com.klef.sdp.repository.UserRepository;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.Paragraph;
+import com.itextpdf.text.pdf.PdfWriter;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.io.ByteArrayOutputStream;
+
+@Service
+public class CertificateService {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private CourseRepository courseRepository;
+
+    public byte[] generateCertificate(Long courseId, Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        if (!user.getRoles().stream().anyMatch(role -> role.getName().equalsIgnoreCase("STUDENT"))) {
+            throw new RuntimeException("Unauthorized: User is not a student");
+        }
+        Course course = courseRepository.findById(courseId).orElseThrow(() -> new RuntimeException("Course not found"));
+        try {
+            Document document = new Document();
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            PdfWriter.getInstance(document, out);
+            document.open();
+            document.add(new Paragraph("Certificate for " + user.getFullName() + " for completing " + course.getTitle()));
+            document.close();
+            return out.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException("Error generating certificate", e);
+        }
+    }
+}

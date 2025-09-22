@@ -1,0 +1,4 @@
+Description	Resource	Path	Location	Type
+getEnrollments cannot be resolved or is not a field	StudentController.java	/LMS-SPRINGBOOT/src/main/java/com/klef/sdp/controller	line 42	Java Problem
+Syntax error on token "Invalid Character", invalid AssignmentOperator	StudentController.java	/LMS-SPRINGBOOT/src/main/java/com/klef/sdp/controller	line 42	Java Problem
+The method byStudent(Long) is undefined for the type StudentController	StudentController.java	/LMS-SPRINGBOOT/src/main/java/com/klef/sdp/controller	line 42	Java Problem

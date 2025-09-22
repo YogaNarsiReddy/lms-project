@@ -1,0 +1,54 @@
+package com.klef.sdp.controller;
+
+import com.klef.sdp.entity.Assignment;
+import com.klef.sdp.entity.Course;
+import com.klef.sdp.entity.Submission;
+import com.klef.sdp.service.AssignmentService;
+import com.klef.sdp.service.CourseService;
+import com.klef.sdp.service.SubmissionService;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@CrossOrigin(origins = "http://localhost:5173")
+@RequestMapping("/api/instructor")
+public class InstructorController {
+
+    @Autowired
+    private CourseService courseService;
+
+    @Autowired
+    private AssignmentService assignmentService;
+
+    @Autowired
+    private SubmissionService submissionService;
+
+    @PostMapping("/courses")
+    public ResponseEntity<Course> createCourse(@Valid @RequestBody Course course, @RequestParam Long userId) {
+        return ResponseEntity.ok(courseService.createCourse(course, userId));
+    }
+
+    @PutMapping("/courses/{id}")
+    public ResponseEntity<Course> updateCourse(@PathVariable Long id, @Valid @RequestBody Course course, @RequestParam Long userId) {
+        return ResponseEntity.ok(courseService.updateCourse(id, course, userId));
+    }
+
+    @PostMapping("/courses/{courseId}/assignments")
+    public ResponseEntity<Assignment> createAssignment(@PathVariable Long courseId, @Valid @RequestBody Assignment assignment, @RequestParam Long userId) {
+        return ResponseEntity.ok(assignmentService.createAssignment(courseId, assignment, userId));
+    }
+
+    @GetMapping("/courses/{courseId}/submissions")
+    public ResponseEntity<List<Submission>> getSubmissions(@PathVariable Long courseId, @RequestParam Long userId) {
+        return ResponseEntity.ok(submissionService.getSubmissionsByCourse(courseId, userId));
+    }
+
+    @PutMapping("/submissions/{submissionId}/grade")
+    public ResponseEntity<Submission> gradeSubmission(@PathVariable Long submissionId, @RequestParam Double grade, @RequestParam Long userId) {
+        return ResponseEntity.ok(submissionService.gradeSubmission(submissionId, grade, userId));
+    }
+}

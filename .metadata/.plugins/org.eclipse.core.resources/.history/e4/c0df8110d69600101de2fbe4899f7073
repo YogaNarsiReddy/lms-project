@@ -1,0 +1,64 @@
+package com.klef.sdp.service;
+
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Service
+public class SubmissionService {
+
+    @Autowired
+    private SubmissionRepository submissionRepository;
+
+    @Autowired
+    private AssignmentRepository assignmentRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private CourseRepository courseRepository;
+
+    public Submission submitAssignment(Long assignmentId, MultipartFile file, Authentication authentication) throws IOException {
+        User student = userRepository.findByUsername(authentication.getName())
+            .orElseThrow(() -> new IllegalArgumentException("Student not found"));
+        Assignment assignment = assignmentRepository.findById(assignmentId)
+            .orElseThrow(() -> new IllegalArgumentException("Assignment not found"));
+        // In a real app, save file to storage (e.g., S3) and store URL
+        String content = "File: " + file.getOriginalFilename();
+        Submission submission = new Submission(student, assignment, content, LocalDateTime.now());
+        return submissionRepository.save(submission);
+    }
+
+    public List<Submission> getSubmissionsByCourse(Long courseId, Authentication authentication) {
+        User instructor = userRepository.findByUsername(authentication.getName())
+            .orElseThrow(() -> new IllegalArgumentException("Instructor not found"));
+        Course course = courseRepository.findById(courseId)
+            .orElseThrow(() -> new IllegalArgumentException("Course not found"));
+        if (!course.getInstructor().getId().equals(instructor.getId())) {
+            throw new SecurityException("Unauthorized to view submissions");
+        }
+        return assignmentRepository.findByCourse(course).stream()
+            .flatMap(assignment -> submissionRepository.findByAssignment(assignment).stream())
+            .toList();
+    }
+
+    public Submission gradeSubmission(Long submissionId, Double grade, Authentication authentication) {
+        User instructor = userRepository.findByUsername(authentication.getName())
+            .orElseThrow(() -> new IllegalArgumentException("Instructor not found"));
+        Submission submission = submissionRepository.findById(submissionId)
+            .orElseThrow(() -> new IllegalArgumentException("Submission not found"));
+        Course course = submission.getAssignment().getCourse();
+        if (!course.getInstructor().getId().equals(instructor.getId())) {
+            throw new SecurityException("Unauthorized to grade this submission");
+        }
+        submission.setGrade(grade);
+        return submissionRepository.save(submission);
+    }
+}

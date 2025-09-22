@@ -1,0 +1,57 @@
+package com.klef.sdp.service;
+
+import com.itextpdf.text.Document;
+import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.Paragraph;
+import com.itextpdf.text.pdf.PdfWriter;
+import com.klef.sdp.entity.Course;
+import com.klef.sdp.entity.Enrollment;
+import com.lms.entity.User;
+import com.lms.repository.CourseRepository;
+import com.lms.repository.EnrollmentRepository;
+import com.lms.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Service;
+
+import java.io.ByteArrayOutputStream;
+
+@Service
+public class CertificateService {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private CourseRepository courseRepository;
+
+    @Autowired
+    private EnrollmentRepository enrollmentRepository;
+
+    public byte[] generateCertificate(Long courseId, Authentication authentication) {
+        User student = userRepository.findByUsername(authentication.getName())
+            .orElseThrow(() -> new IllegalArgumentException("Student not found"));
+        Course course = courseRepository.findById(courseId)
+            .orElseThrow(() -> new IllegalArgumentException("Course not found"));
+        Enrollment enrollment = enrollmentRepository.findByStudentAndCourse(student, course)
+            .orElseThrow(() -> new IllegalArgumentException("Not enrolled"));
+        if (enrollment.getProgress() < 100.0) {
+            throw new IllegalArgumentException("Course not completed");
+        }
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        Document document = new Document();
+        try {
+            PdfWriter.getInstance(document, baos);
+            document.open();
+            document.add(new Paragraph("Certificate of Completion"));
+            document.add(new Paragraph("This certifies that " + student.getFullName()));
+            document.add(new Paragraph("has successfully completed the course: " + course.getTitle()));
+            document.add(new Paragraph("Date: " + java.time.LocalDate.now()));
+            document.close();
+        } catch (DocumentException e) {
+            throw new RuntimeException("Error generating certificate", e);
+        }
+        return baos.toByteArray();
+    }
+}

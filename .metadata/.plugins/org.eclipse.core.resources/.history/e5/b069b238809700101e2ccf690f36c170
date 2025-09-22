@@ -1,0 +1,43 @@
+package com.klef.sdp.service;
+
+import com.klef.sdp.entity.Course;
+import com.klef.sdp.entity.Enrollment;
+import com.klef.sdp.entity.User;
+import com.klef.sdp.repository.CourseRepository;
+import com.klef.sdp.repository.EnrollmentRepository;
+import com.klef.sdp.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@Service
+public class EnrollmentService {
+
+    @Autowired
+    private EnrollmentRepository enrollmentRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private CourseRepository courseRepository;
+
+    public Enrollment enroll(Long courseId, Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        if (!user.getRoles().stream().anyMatch(role -> role.getName().equalsIgnoreCase("STUDENT"))) {
+            throw new RuntimeException("Unauthorized: User is not a student");
+        }
+        Course course = courseRepository.findById(courseId).orElseThrow(() -> new RuntimeException("Course not found"));
+        Enrollment enrollment = new Enrollment(user, course, 0.0);
+        return enrollmentRepository.save(enrollment);
+    }
+
+    public Double getProgress(Long courseId, Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        if (!user.getRoles().stream().anyMatch(role -> role.getName().equalsIgnoreCase("STUDENT"))) {
+            throw new RuntimeException("Unauthorized: User is not a student");
+        }
+        Enrollment enrollment = enrollmentRepository.findByStudentIdAndCourseId(userId, courseId)
+                .orElseThrow(() -> new RuntimeException("Enrollment not found"));
+        return enrollment.getProgress();
+    }
+}
